@@ -30,16 +30,9 @@ docker compose down 2>/dev/null || true
 echo -e "${BLUE}📦 Creating OpenVPN data volume...${NC}"
 docker volume create openvpn-data 2>/dev/null || echo "Volume already exists"
 
-# Generate OpenVPN configuration with P2P settings (no internet routing)
+# Generate OpenVPN configuration
 echo -e "${BLUE}⚙️  Generating OpenVPN configuration for P2P...${NC}"
-docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn ovpn_genconfig \
-    -u udp://$DOMAIN:$PORT \
-    -C AES-256-GCM \
-    -a SHA256 \
-    -t \
-    -z \
-    -p "route $NETWORK 255.255.255.0" \
-    -p "client-to-client"
+docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn ovpn_genconfig -u udp://$DOMAIN:$PORT -d
 
 echo -e "${GREEN}✅ Configuration generated successfully${NC}"
 
@@ -51,6 +44,17 @@ docker run -v openvpn-data:/etc/openvpn --rm -e EASYRSA_BATCH=1 -e EASYRSA_REQ_C
     kylemanna/openvpn ovpn_initpki nopass
 
 echo -e "${GREEN}✅ PKI initialized successfully${NC}"
+
+# Configure for P2P communication (no internet routing)
+echo -e "${BLUE}🔧 Configuring for P2P communication...${NC}"
+docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c '
+    sed -i "/^push.*redirect-gateway/d" /etc/openvpn/openvpn.conf
+    sed -i "/^push.*dhcp-option.*DOMAIN/d" /etc/openvpn/openvpn.conf
+    echo "client-to-client" >> /etc/openvpn/openvpn.conf
+    echo "push \"route '"$NETWORK"' 255.255.255.0\"" >> /etc/openvpn/openvpn.conf
+'
+
+echo -e "${GREEN}✅ P2P configuration applied${NC}"
 
 # Verify the setup
 echo -e "${BLUE}🔍 Verifying configuration...${NC}"

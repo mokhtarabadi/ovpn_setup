@@ -8,6 +8,11 @@ services:
       - openvpn-data:/etc/openvpn
     cap_add:
       - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    sysctls:
+      - net.ipv6.conf.default.forwarding=1
+      - net.ipv6.conf.all.forwarding=1
     restart: unless-stopped
     environment:
       - EASYRSA_BATCH=1
@@ -20,4 +25,4 @@ networks:
 
 volumes:
   openvpn-data:
-    driver: local
+    external: true
