@@ -60,3 +60,6 @@ easyrsa/
 # Test Files
 test_*.ovpn
 demo_*.ovpn
+
+# Idea
+.idea/
