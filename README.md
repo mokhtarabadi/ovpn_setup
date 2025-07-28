@@ -35,7 +35,10 @@ nano .env  # Set VPN_DOMAIN and optionally OPENVPN_PROTOCOL
 
 ### 2. **Initialize OpenVPN Server**
 ```bash
-# Initialize with your server's domain/IP
+# Option 1: Use VPN_DOMAIN from .env file (recommended)
+./init-openvpn.sh
+
+# Option 2: Override with command line argument
 ./init-openvpn.sh your-server-ip-or-domain.com
 ```
 
@@ -146,15 +149,24 @@ OPENVPN_PORT=443
 #### **Initialize Server with Protocol Selection**
 
 ```bash
-# UDP (default - fast)
+# Use configuration from .env file (recommended approach)
+./init-openvpn.sh
+
+# Override domain from command line
 ./init-openvpn.sh vpn.mycompany.com
 
-# TCP (reliable - for restrictive networks)
-OPENVPN_PROTOCOL=tcp OPENVPN_PORT=443 ./init-openvpn.sh vpn.mycompany.com
+# Override with environment variables (still uses .env for other settings)
+OPENVPN_PROTOCOL=tcp OPENVPN_PORT=443 ./init-openvpn.sh
 
-# With all custom parameters
+# Override all parameters via command line arguments
 ./init-openvpn.sh vpn.example.com 10.9.0.0 10.9.0.1 443 tcp
 ```
+
+**Parameter precedence (highest to lowest):**
+
+1. Command line arguments
+2. Environment variables from .env file
+3. Built-in defaults
 
 #### **Start/Stop Server**
 
@@ -244,7 +256,14 @@ OPENVPN_PORT=1194                  # 1194 for UDP, 443 for TCP recommended
 VPN_DOMAIN=your-server.example.com # Your server's public IP or domain
 VPN_NETWORK=10.8.0.0               # Internal VPN network range
 VPN_SERVER_IP=10.8.0.1             # VPN server's internal IP
+
+# Multiple device connections per certificate
+ALLOW_DUPLICATE_CN=false           # false (secure) or true (convenient)
 ```
+
+> **💡 VPN_DOMAIN Usage**: The `VPN_DOMAIN` variable is used as the default domain when running `./init-openvpn.sh`
+> without arguments. You can override it by providing a domain as the first argument:
+`./init-openvpn.sh my-custom-domain.com`
 
 ### Protocol-Specific Configurations
 
