@@ -1,0 +1,62 @@
+# OpenVPN Configuration Files
+*.ovpn
+*.conf
+*.key
+*.crt
+*.pem
+*.p12
+
+# Environment Files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Backup Files
+backups/
+*.tar.gz
+*.zip
+*.bak
+
+# Docker Volumes (if accidentally copied)
+openvpn-data/
+
+# Temporary Files
+*.tmp
+*.temp
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Certificate and Key Files (Security)
+pki/
+easyrsa/
+*.csr
+
+# Runtime Files
+*.pid
+*.sock
+
+# Test Files
+test_*.ovpn
+demo_*.ovpn
