@@ -71,10 +71,23 @@ echo -e "${GREEN}✅ PKI initialized successfully${NC}"
 
 # Configure for P2P communication (no internet routing)
 echo -e "${BLUE}🔧 Configuring for P2P communication...${NC}"
+
+# Check if duplicate-cn should be enabled
+DUPLICATE_CN_CONFIG=""
+if [ "${ALLOW_DUPLICATE_CN,,}" = "true" ]; then
+    DUPLICATE_CN_CONFIG='echo "duplicate-cn" >> /etc/openvpn/openvpn.conf'
+    echo -e "${YELLOW}   • Multiple connections per certificate: ENABLED${NC}"
+    echo -e "${YELLOW}   • Users can connect from multiple devices with same certificate${NC}"
+else
+    echo -e "${YELLOW}   • Multiple connections per certificate: DISABLED${NC}"
+    echo -e "${YELLOW}   • One connection per certificate (more secure)${NC}"
+fi
+
 docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c '
     sed -i "/^push.*redirect-gateway/d" /etc/openvpn/openvpn.conf
     sed -i "/^push.*dhcp-option.*DOMAIN/d" /etc/openvpn/openvpn.conf
     echo "client-to-client" >> /etc/openvpn/openvpn.conf
+    '"$DUPLICATE_CN_CONFIG"'
     echo "push \"route '"$NETWORK"' 255.255.255.0\"" >> /etc/openvpn/openvpn.conf
 '
 
