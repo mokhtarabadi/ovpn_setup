@@ -25,4 +25,5 @@ networks:
 
 volumes:
   openvpn-data:
-    external: true
+    name: openvpn-data
+    driver: local

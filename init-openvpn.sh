@@ -26,10 +26,6 @@ echo ""
 echo -e "${BLUE}🛑 Stopping existing OpenVPN containers...${NC}"
 docker compose down 2>/dev/null || true
 
-# Create volume if it doesn't exist
-echo -e "${BLUE}📦 Creating OpenVPN data volume...${NC}"
-docker volume create openvpn-data 2>/dev/null || echo "Volume already exists"
-
 # Generate OpenVPN configuration
 echo -e "${BLUE}⚙️  Generating OpenVPN configuration for P2P...${NC}"
 docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn ovpn_genconfig -u udp://$DOMAIN:$PORT -d
