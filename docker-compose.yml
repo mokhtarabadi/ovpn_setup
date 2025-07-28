@@ -3,7 +3,7 @@ services:
     image: kylemanna/openvpn:latest
     container_name: openvpn-server
     ports:
-      - "${OPENVPN_PORT:-1194}:1194/udp"
+      - "${OPENVPN_PORT:-1194}:1194/${OPENVPN_PROTOCOL:-udp}"
     volumes:
       - openvpn-data:/etc/openvpn
     cap_add:
@@ -16,6 +16,8 @@ services:
     restart: unless-stopped
     environment:
       - EASYRSA_BATCH=1
+      - OPENVPN_PROTOCOL=${OPENVPN_PROTOCOL:-udp}
+      - OPENVPN_PORT=${OPENVPN_PORT:-1194}
     networks:
       - openvpn-network
 

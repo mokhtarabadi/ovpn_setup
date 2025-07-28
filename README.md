@@ -2,13 +2,15 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-20.10+-blue.svg)](https://www.docker.com/)
+[![Docker Image](https://img.shields.io/badge/Docker%20Image-kylemanna%2Fopenvpn-blue.svg)](https://hub.docker.com/r/kylemanna/openvpn/)
 [![OpenVPN](https://img.shields.io/badge/OpenVPN-2.5+-green.svg)](https://openvpn.net/)
 [![Platform](https://img.shields.io/badge/Platform-Linux-orange.svg)](https://www.linux.org/)
 
 🔐 **Secure peer-to-peer VPN for company internal communication**
 
 This setup creates an OpenVPN server specifically configured for **peer-to-peer communication** between team members
-without routing internet traffic through the VPN server.
+without routing internet traffic through the VPN server. Based on the
+reliable [kylemanna/openvpn](https://hub.docker.com/r/kylemanna/openvpn/) Docker image.
 
 ## ✨ Features
 
@@ -16,6 +18,7 @@ without routing internet traffic through the VPN server.
 - **🚫 No Internet Routing**: Web browsing stays on local connections (no exit node)
 - **🔐 Strong Security**: AES-256-GCM encryption with certificate-based authentication
 - **📦 Docker-Based**: Easy deployment and management with Docker Compose
+- **🌐 Protocol Support**: Both UDP (fast) and TCP (reliable) protocols
 - **🛠️ Full Management**: Scripts for client management, monitoring, and backups
 - **⚡ Production Ready**: Automated setup with proper security practices
 
@@ -27,7 +30,7 @@ without routing internet traffic through the VPN server.
 ```bash
 # Copy and customize environment variables
 cp .env.example .env
-nano .env  # Set VPN_DOMAIN to your server's IP or domain
+nano .env  # Set VPN_DOMAIN and optionally OPENVPN_PROTOCOL
 ```
 
 ### 2. **Initialize OpenVPN Server**
@@ -77,19 +80,80 @@ docker compose up -d
 
 ---
 
+## 🌐 Protocol Selection: UDP vs TCP
+
+### **UDP Protocol (Default)**
+
+```bash
+# In .env file:
+OPENVPN_PROTOCOL=udp
+OPENVPN_PORT=1194
+```
+
+**✅ Best for:**
+
+- Gaming and real-time applications
+- Streaming media
+- General purpose VPN usage
+- Low-latency requirements
+
+**📊 Characteristics:**
+
+- **Faster**: Lower overhead and latency
+- **Efficient**: Better bandwidth utilization
+- **Default**: Standard OpenVPN protocol
+- **NAT-friendly**: Works with most routers
+
+### **TCP Protocol**
+
+```bash
+# In .env file:
+OPENVPN_PROTOCOL=tcp
+OPENVPN_PORT=443
+```
+
+**✅ Best for:**
+
+- Restrictive corporate networks
+- Networks that block UDP
+- Highly regulated environments
+- Connections through HTTP proxies
+
+**📊 Characteristics:**
+
+- **Reliable**: Guaranteed packet delivery
+- **Proxy-friendly**: Works through HTTP proxies
+- **Firewall-friendly**: Uses common ports (443)
+- **Slightly slower**: Higher overhead due to TCP
+
+### **Quick Protocol Comparison**
+
+| Feature                | UDP                  | TCP              |
+|------------------------|----------------------|------------------|
+| **Speed**              | ⚡ Faster             | 🐌 Slower        |
+| **Reliability**        | 🔄 Good              | ✅ Excellent      |
+| **Firewall Bypass**    | ⚠️ Sometimes blocked | ✅ Rarely blocked |
+| **Gaming/Streaming**   | ✅ Excellent          | ⚠️ Good          |
+| **Corporate Networks** | ⚠️ May be blocked    | ✅ Usually works  |
+| **Latency**            | ✅ Lower              | ⚠️ Higher        |
+
+---
+
 ## 🔧 Detailed Usage
 
 ### Server Management
 
-#### **Initialize Server**
+#### **Initialize Server with Protocol Selection**
 
 ```bash
-./init-openvpn.sh <domain-or-ip> [network] [server-ip] [port]
-
-# Examples:
+# UDP (default - fast)
 ./init-openvpn.sh vpn.mycompany.com
-./init-openvpn.sh 192.168.1.100
-./init-openvpn.sh vpn.example.com 10.9.0.0 10.9.0.1 1194
+
+# TCP (reliable - for restrictive networks)
+OPENVPN_PROTOCOL=tcp OPENVPN_PORT=443 ./init-openvpn.sh vpn.mycompany.com
+
+# With all custom parameters
+./init-openvpn.sh vpn.example.com 10.9.0.0 10.9.0.1 443 tcp
 ```
 
 #### **Start/Stop Server**
@@ -172,11 +236,43 @@ docker compose up -d
 ### Environment Variables (.env)
 
 ```bash
-# OpenVPN Server Configuration
-VPN_DOMAIN=your-server.example.com     # Your server's public IP or domain
-OPENVPN_PORT=1194                      # UDP port for OpenVPN
-VPN_NETWORK=10.8.0.0                   # Internal VPN network range
-VPN_SERVER_IP=10.8.0.1                 # VPN server's internal IP
+# Protocol Selection
+OPENVPN_PROTOCOL=udp               # udp (fast) or tcp (reliable)
+OPENVPN_PORT=1194                  # 1194 for UDP, 443 for TCP recommended
+
+# Server Configuration
+VPN_DOMAIN=your-server.example.com # Your server's public IP or domain
+VPN_NETWORK=10.8.0.0               # Internal VPN network range
+VPN_SERVER_IP=10.8.0.1             # VPN server's internal IP
+```
+
+### Protocol-Specific Configurations
+
+#### **For Gaming/Streaming (UDP)**
+
+```bash
+OPENVPN_PROTOCOL=udp
+OPENVPN_PORT=1194
+```
+
+#### **For Corporate Networks (TCP)**
+
+```bash
+OPENVPN_PROTOCOL=tcp
+OPENVPN_PORT=443
+```
+
+#### **Custom Port Configurations**
+
+```bash
+# Alternative UDP ports
+OPENVPN_PROTOCOL=udp
+OPENVPN_PORT=443      # UDP on 443
+
+# Alternative TCP ports  
+OPENVPN_PROTOCOL=tcp
+OPENVPN_PORT=80       # TCP on 80 (HTTP port)
+OPENVPN_PORT=22       # TCP on 22 (SSH port)
 ```
 
 ### Network Configuration
@@ -184,8 +280,8 @@ VPN_SERVER_IP=10.8.0.1                 # VPN server's internal IP
 - **VPN Network**: `10.8.0.0/24` (configurable)
 - **Server IP**: `10.8.0.1` (internal VPN IP)
 - **Client IPs**: `10.8.0.2` - `10.8.0.254` (auto-assigned)
-- **Port**: `1194/UDP` (configurable)
-- **Protocol**: `UDP`
+- **Protocols**: UDP (default) or TCP
+- **Ports**: 1194/UDP (default) or 443/TCP (recommended)
 
 ---
 
@@ -238,8 +334,9 @@ docker compose logs
 # Verify configuration
 ./validate-setup.sh
 
-# Check port availability
-sudo netstat -tuln | grep 1194
+# Check port availability (adjust for your protocol)
+sudo netstat -tuln | grep 1194  # UDP
+sudo netstat -tuln | grep 443   # TCP
 ```
 
 #### **Client can't connect**
@@ -247,32 +344,41 @@ sudo netstat -tuln | grep 1194
 # Verify server is running
 ./status-openvpn.sh
 
-# Check firewall (server side)
-sudo ufw allow 1194/udp
+# Check firewall (adjust for your protocol/port)
+sudo ufw allow 1194/udp  # UDP
+sudo ufw allow 443/tcp   # TCP
 
 # Regenerate client config
 ./manage-client.sh username show
 ```
 
-#### **Clients can't communicate**
-```bash
-# Verify client-to-client is enabled
-docker run -v openvpn-data:/etc/openvpn --rm alpine \
-  grep "client-to-client" /etc/openvpn/openvpn.conf
+#### **Protocol-specific issues**
 
-# Check client IPs
-./manage-client.sh list
+**UDP Issues:**
+```bash
+# UDP might be blocked in restrictive networks
+# Try switching to TCP:
+# Edit .env: OPENVPN_PROTOCOL=tcp, OPENVPN_PORT=443
+# Reinitialize: ./init-openvpn.sh your-domain.com
+```
+
+**TCP Issues:**
+
+```bash
+# TCP might be slower for real-time applications
+# Try switching to UDP:
+# Edit .env: OPENVPN_PROTOCOL=udp, OPENVPN_PORT=1194
+# Reinitialize: ./init-openvpn.sh your-domain.com
 ```
 
 ### Port Configuration
 ```bash
-# Default OpenVPN port
-UFW_RULES="
-sudo ufw allow 1194/udp
-"
+# Default OpenVPN ports
+sudo ufw allow 1194/udp  # UDP
+sudo ufw allow 443/tcp   # TCP
 
-# Alternative ports (if 1194 is blocked)
-# Update .env file and restart server
+# Check which protocol is active
+./status-openvpn.sh
 ```
 
 ---
@@ -284,7 +390,7 @@ sudo ufw allow 1194/udp
 - **RAM**: 1GB minimum (2GB recommended)
 - **Storage**: 10GB minimum
 - **Network**: Public IP or domain name
-- **Ports**: UDP 1194 (or custom port) open
+- **Ports**: 1194/UDP or 443/TCP (configurable)
 
 ### Client Requirements
 
@@ -296,10 +402,37 @@ sudo ufw allow 1194/udp
 - **Docker**: 20.10+
 - **Docker Compose**: 2.0+
 - **OpenVPN Client**: Latest version recommended
+- **Docker Image**: [kylemanna/openvpn:latest](https://hub.docker.com/r/kylemanna/openvpn/)
 
 ---
 
 ## 🔧 Advanced Configuration
+
+### Dual Protocol Setup
+
+For maximum compatibility, you can run both UDP and TCP simultaneously:
+
+```yaml
+# docker-compose.override.yml
+services:
+  openvpn-tcp:
+    image: kylemanna/openvpn:latest
+    container_name: openvpn-server-tcp
+    ports:
+      - "443:1194/tcp"
+    volumes:
+      - openvpn-data-tcp:/etc/openvpn
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    restart: unless-stopped
+
+volumes:
+  openvpn-data-tcp:
+    name: openvpn-data-tcp
+    driver: local
+```
 
 ### Custom Network Range
 
@@ -310,15 +443,6 @@ VPN_SERVER_IP=172.16.0.1
 
 # Reinitialize server
 ./init-openvpn.sh your-domain.com 172.16.0.0 172.16.0.1
-```
-
-### Multiple Ports/Protocols
-
-```bash
-# TCP instead of UDP (add to docker-compose.yml)
-ports:
-  - "1194:1194/udp"
-  - "443:443/tcp"   # For restrictive networks
 ```
 
 ### Custom Certificate Validity
@@ -356,6 +480,15 @@ docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn \
 
 ## 📜 License & Security
 
+### Docker Image Information
+
+This project uses the [kylemanna/openvpn](https://hub.docker.com/r/kylemanna/openvpn/) Docker image:
+
+- **Image**: `kylemanna/openvpn:latest`
+- **GitHub**: [kylemanna/docker-openvpn](https://github.com/kylemanna/docker-openvpn)
+- **Docker Hub**: [kylemanna/openvpn](https://hub.docker.com/r/kylemanna/openvpn/)
+- **License**: MIT (same as this project)
+
 ### Security Notice
 
 - This setup creates a **private VPN for internal communication**
@@ -377,11 +510,12 @@ docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn \
 After setup completion:
 
 1. **✅ Test connectivity** between team members
-2. **✅ Configure firewall rules** on server
+2. **✅ Configure firewall rules** on server (UDP/TCP specific)
 3. **✅ Set up automated backups** (cron job)
 4. **✅ Document internal IP assignments** for team
 5. **✅ Train team members** on OpenVPN client usage
 6. **✅ Monitor server health** regularly
+7. **✅ Test both protocols** if network issues arise
 
 ---
 
