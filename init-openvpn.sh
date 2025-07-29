@@ -122,17 +122,6 @@ echo ""
 echo -e "${GREEN}🎉 OpenVPN P2P server initialization complete!${NC}"
 echo ""
 
-# Configure VPN port forwarding if not explicitly disabled
-if [ "${ENABLE_VPN_FORWARDING:-true}" != "false" ]; then
-    echo -e "${BLUE}🔧 Configuring VPN port forwarding (container-based)...${NC}"
-    if [ -f "./manage-vpn-forwarding.sh" ]; then
-        ./manage-vpn-forwarding.sh
-    else
-        echo -e "${YELLOW}⚠️  manage-vpn-forwarding.sh not found, skipping port forwarding setup${NC}"
-    fi
-    echo ""
-fi
-
 echo -e "${BLUE}Next steps:${NC}"
 echo -e "  1. Start server: ${YELLOW}docker compose up -d${NC}"
 echo -e "  2. Create client: ${YELLOW}./manage-client.sh <client-name>${NC}"
@@ -143,3 +132,4 @@ echo -e "  • Protocol: $PROTOCOL on port $PORT"
 echo -e "  • Clients will be able to communicate with each other"
 echo -e "  • Internet traffic will NOT be routed through the VPN"
 echo -e "  • Each client will get an IP in the $NETWORK/24 range"
+echo -e "  • Host services accessible at 10.8.0.1 via host networking"

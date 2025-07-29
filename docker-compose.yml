@@ -1,23 +1,15 @@
-version: '3.8'
-
 services:
   openvpn:
     image: kylemanna/openvpn:latest
     container_name: openvpn-server
-    ports:
-      - "${OPENVPN_PORT:-1194}:1194/${OPENVPN_PROTOCOL:-udp}"
+    network_mode: host
     volumes:
       - openvpn-data:/etc/openvpn
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun
-    sysctls:
-      - net.ipv6.conf.default.forwarding=1
-      - net.ipv6.conf.all.forwarding=1
     restart: unless-stopped
-    extra_hosts:
-      - "docker-host:host-gateway"
     environment:
       - EASYRSA_BATCH=1
       - OPENVPN_PROTOCOL=${OPENVPN_PROTOCOL:-udp}
@@ -27,12 +19,6 @@ services:
       - VPN_DOMAIN=${VPN_DOMAIN:-vpn.example.com}
       - ALLOW_DUPLICATE_CN=${ALLOW_DUPLICATE_CN:-false}
     privileged: true
-    networks:
-      - openvpn-network
-
-networks:
-  openvpn-network:
-    driver: bridge
 
 volumes:
   openvpn-data:
