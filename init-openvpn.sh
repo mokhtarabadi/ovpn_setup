@@ -20,6 +20,7 @@ NETWORK=${2:-${VPN_NETWORK:-10.8.0.0}}
 SERVER_IP=${3:-${VPN_SERVER_IP:-10.8.0.1}}
 PORT=${4:-${OPENVPN_PORT:-1194}}
 PROTOCOL=${5:-${OPENVPN_PROTOCOL:-udp}}
+HOST_IP=${HOST_IP:-172.17.0.1}
 
 # Validate protocol
 if [[ "$PROTOCOL" != "udp" && "$PROTOCOL" != "tcp" ]]; then
@@ -121,6 +122,18 @@ echo -e "${YELLOW}   • $PORT_CHECK${NC}"
 echo ""
 echo -e "${GREEN}🎉 OpenVPN P2P server initialization complete!${NC}"
 echo ""
+
+# Configure host access if not explicitly disabled
+if [ "${ENABLE_HOST_ACCESS:-true}" != "false" ]; then
+    echo -e "${BLUE}🔧 Configuring host access...${NC}"
+    if [ -f "./configure-host-access.sh" ]; then
+        ./configure-host-access.sh
+    else
+        echo -e "${YELLOW}⚠️  configure-host-access.sh not found, skipping host access setup${NC}"
+    fi
+    echo ""
+fi
+
 echo -e "${BLUE}Next steps:${NC}"
 echo -e "  1. Start server: ${YELLOW}docker compose up -d${NC}"
 echo -e "  2. Create client: ${YELLOW}./manage-client.sh <client-name>${NC}"

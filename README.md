@@ -16,6 +16,7 @@ reliable [kylemanna/openvpn](https://hub.docker.com/r/kylemanna/openvpn/) Docker
 
 - **🔒 Client-to-Client P2P**: Team members can directly communicate with each other
 - **🚫 No Internet Routing**: Web browsing stays on local connections (no exit node)
+- **🏠 Host Service Access**: Access Docker host services from VPN clients
 - **🔐 Strong Security**: AES-256-GCM encryption with certificate-based authentication
 - **📦 Docker-Based**: Easy deployment and management with Docker Compose
 - **🌐 Protocol Support**: Both UDP (fast) and TCP (reliable) protocols
@@ -299,8 +300,46 @@ OPENVPN_PORT=22       # TCP on 22 (SSH port)
 - **VPN Network**: `10.8.0.0/24` (configurable)
 - **Server IP**: `10.8.0.1` (internal VPN IP)
 - **Client IPs**: `10.8.0.2` - `10.8.0.254` (auto-assigned)
+- **Host Access**: `172.17.0.1` (Docker host services)
 - **Protocols**: UDP (default) or TCP
 - **Ports**: 1194/UDP (default) or 443/TCP (recommended)
+
+### Host Access Configuration
+
+- **Host IP**: `172.17.0.1` (auto-detected)
+- **Enable Host Access**: `true` (enabled by default)
+
+---
+
+## 🏠 Host Service Access
+
+### Overview
+
+VPN clients can access services running on the Docker host (e.g., web apps on port 80, databases on port 5432) while
+maintaining P2P functionality.
+
+### Quick Setup
+
+Host access is automatically configured during initialization. No additional steps required!
+
+### Usage Examples
+
+```bash
+# From VPN client, access host services:
+curl http://172.17.0.1:80        # Web application
+psql -h 172.17.0.1 -p 5432       # Database
+curl http://172.17.0.1:8080/api  # API service
+```
+
+### Configuration
+
+```bash
+# In .env file
+HOST_IP=172.17.0.1                # Docker host IP (auto-detected)
+ENABLE_HOST_ACCESS=true           # Enable/disable host access
+```
+
+**📖 For detailed host access guide, see [HOST_ACCESS_GUIDE.md](HOST_ACCESS_GUIDE.md)**
 
 ---
 
