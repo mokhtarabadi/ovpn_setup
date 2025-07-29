@@ -17,6 +17,8 @@ services:
       - VPN_NETWORK=${VPN_NETWORK:-10.8.0.0}
       - VPN_SERVER_IP=${VPN_SERVER_IP:-10.8.0.1}
       - VPN_DOMAIN=${VPN_DOMAIN:-vpn.example.com}
+      - TUN_DEVICE_NAME=${TUN_DEVICE_NAME:-tun0}
+      - ENABLE_COMPRESSION=${ENABLE_COMPRESSION:-false}
       - ALLOW_DUPLICATE_CN=${ALLOW_DUPLICATE_CN:-false}
     privileged: true
 

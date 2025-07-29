@@ -34,6 +34,8 @@
 - **Host Access**: Access host services at `10.8.0.1` (VPN server IP)
 - **No Internet Routing**: Web browsing stays on local connections
 - **Host Networking**: Direct access to host network via OpenVPN container
+- **Configurable Device**: Custom TUN device names (tun0, tun1, etc.)
+- **Optional Compression**: Enable/disable LZO compression (disabled by default)
 - **Simple Setup**: Minimal configuration, maximum functionality
 
 ## Network Layout
@@ -75,12 +77,37 @@ psql -h 10.8.0.1 -p 5432
 ## Configuration (.env)
 
 ```bash
-OPENVPN_PROTOCOL=udp        # udp or tcp
-OPENVPN_PORT=1194          # 1194 for UDP, 443 for TCP
-VPN_DOMAIN=your-server.com  # Your server IP or domain
-VPN_NETWORK=10.8.0.0       # VPN network range
-VPN_SERVER_IP=10.8.0.1     # VPN server IP
-ALLOW_DUPLICATE_CN=false   # Multiple devices per certificate
+OPENVPN_PROTOCOL=udp              # udp or tcp
+OPENVPN_PORT=1194                 # 1194 for UDP, 443 for TCP
+VPN_DOMAIN=your-server.com        # Your server IP or domain
+VPN_NETWORK=10.8.0.0              # VPN network range
+VPN_SERVER_IP=10.8.0.1            # VPN server IP
+TUN_DEVICE_NAME=tun0              # TUN device name (tun0, tun1, etc.)
+ENABLE_COMPRESSION=false          # Enable/disable compression (false by default)
+ALLOW_DUPLICATE_CN=false          # Multiple devices per certificate
+```
+
+## Advanced Usage
+
+### Custom Device Name
+
+```bash
+# Use tun1 instead of default tun0
+TUN_DEVICE_NAME=tun1 ./init-openvpn.sh
+```
+
+### Enable Compression
+
+```bash
+# Enable LZO compression for better performance on slow connections
+ENABLE_COMPRESSION=true ./init-openvpn.sh
+```
+
+### Combined Configuration
+
+```bash
+# Custom device name with compression enabled
+TUN_DEVICE_NAME=tun2 ENABLE_COMPRESSION=true ./init-openvpn.sh
 ```
 
 ## Requirements

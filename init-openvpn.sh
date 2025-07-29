@@ -9,17 +9,25 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Store environment variables before sourcing .env
+ENV_TUN_DEVICE_NAME=${TUN_DEVICE_NAME}
+ENV_ENABLE_COMPRESSION=${ENABLE_COMPRESSION}
+
 # Load configuration from .env file if it exists
 if [ -f .env ]; then
     source .env
 fi
 
-# Default values (can be overridden by command line arguments or .env)
+# Default values (can be overridden by command line arguments or environment variables)
 DOMAIN=${1:-${VPN_DOMAIN:-vpn.example.com}}
 NETWORK=${2:-${VPN_NETWORK:-10.8.0.0}}
 SERVER_IP=${3:-${VPN_SERVER_IP:-10.8.0.1}}
 PORT=${4:-${OPENVPN_PORT:-1194}}
 PROTOCOL=${5:-${OPENVPN_PROTOCOL:-udp}}
+
+# Restore environment variables with proper precedence (env vars > .env > defaults)
+DEVICE_NAME=${ENV_TUN_DEVICE_NAME:-${TUN_DEVICE_NAME:-tun0}}
+COMPRESSION=${ENV_ENABLE_COMPRESSION:-${ENABLE_COMPRESSION:-false}}
 
 # Validate protocol
 if [[ "$PROTOCOL" != "udp" && "$PROTOCOL" != "tcp" ]]; then
@@ -34,6 +42,8 @@ echo -e "${YELLOW}Protocol: $PROTOCOL${NC}"
 echo -e "${YELLOW}Port: $PORT${NC}"
 echo -e "${YELLOW}Network: $NETWORK${NC}"
 echo -e "${YELLOW}Server IP: $SERVER_IP${NC}"
+echo -e "${YELLOW}Device Name: $DEVICE_NAME${NC}"
+echo -e "${YELLOW}Compression: $COMPRESSION${NC}"
 echo ""
 
 # Protocol-specific information
@@ -59,6 +69,28 @@ echo -e "${BLUE}⚙️  Generating OpenVPN configuration for P2P ($PROTOCOL)...$
 docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn ovpn_genconfig -u $PROTOCOL://$DOMAIN:$PORT -s $NETWORK/24 -d
 
 echo -e "${GREEN}✅ Configuration generated successfully${NC}"
+
+# Customize device name and compression settings
+echo -e "${BLUE}🔧 Customizing device and compression settings...${NC}"
+
+# Set custom TUN device name
+if [ "$DEVICE_NAME" != "tun0" ]; then
+    echo -e "${YELLOW}   • Setting device name to: $DEVICE_NAME${NC}"
+    docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c "
+        sed -i 's/^dev tun0$/dev $DEVICE_NAME/' /etc/openvpn/openvpn.conf
+    "
+fi
+
+# Configure compression settings
+if [ "${COMPRESSION,,}" = "true" ]; then
+    echo -e "${YELLOW}   • Enabling compression${NC}"
+    docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c '
+        sed -i "/^comp-lzo no/d" /etc/openvpn/openvpn.conf
+        echo "comp-lzo" >> /etc/openvpn/openvpn.conf
+    '
+else
+    echo -e "${YELLOW}   • Compression disabled (default)${NC}"
+fi
 
 # Initialize PKI (Public Key Infrastructure) without password for automation
 echo -e "${BLUE}🔐 Initializing PKI and creating server certificates...${NC}"
