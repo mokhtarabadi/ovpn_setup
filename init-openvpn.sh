@@ -124,9 +124,9 @@ echo ""
 
 # Configure VPN port forwarding if not explicitly disabled
 if [ "${ENABLE_VPN_FORWARDING:-true}" != "false" ]; then
-    echo -e "${BLUE}🔧 Configuring VPN port forwarding...${NC}"
+    echo -e "${BLUE}🔧 Configuring VPN port forwarding (container-based)...${NC}"
     if [ -f "./manage-vpn-forwarding.sh" ]; then
-        sudo ./manage-vpn-forwarding.sh
+        ./manage-vpn-forwarding.sh
     else
         echo -e "${YELLOW}⚠️  manage-vpn-forwarding.sh not found, skipping port forwarding setup${NC}"
     fi
