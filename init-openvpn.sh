@@ -56,7 +56,7 @@ docker compose down 2>/dev/null || true
 
 # Generate OpenVPN configuration with the specified protocol
 echo -e "${BLUE}⚙️  Generating OpenVPN configuration for P2P ($PROTOCOL)...${NC}"
-docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn ovpn_genconfig -u $PROTOCOL://$DOMAIN:$PORT -d
+docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn ovpn_genconfig -u $PROTOCOL://$DOMAIN:$PORT -s $NETWORK/24 -d
 
 echo -e "${GREEN}✅ Configuration generated successfully${NC}"
 
@@ -83,12 +83,16 @@ else
     echo -e "${YELLOW}   • One connection per certificate (more secure)${NC}"
 fi
 
+# Simplify subnet mask calculation and use /24 subnet
+VPN_NETADDR="$NETWORK"
+VPN_NETMASK="255.255.255.0"
+
 docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c '
     sed -i "/^push.*redirect-gateway/d" /etc/openvpn/openvpn.conf
     sed -i "/^push.*dhcp-option.*DOMAIN/d" /etc/openvpn/openvpn.conf
     echo "client-to-client" >> /etc/openvpn/openvpn.conf
     '"$DUPLICATE_CN_CONFIG"'
-    echo "push \"route '"$NETWORK"' 255.255.255.0\"" >> /etc/openvpn/openvpn.conf
+    echo "push \"route '"$VPN_NETADDR"' '"$VPN_NETMASK"'\"" >> /etc/openvpn/openvpn.conf
 '
 
 echo -e "${GREEN}✅ P2P configuration applied${NC}"

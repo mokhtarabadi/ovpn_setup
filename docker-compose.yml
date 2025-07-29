@@ -18,6 +18,10 @@ services:
       - EASYRSA_BATCH=1
       - OPENVPN_PROTOCOL=${OPENVPN_PROTOCOL:-udp}
       - OPENVPN_PORT=${OPENVPN_PORT:-1194}
+      - VPN_NETWORK=${VPN_NETWORK:-10.8.0.0}
+      - VPN_SERVER_IP=${VPN_SERVER_IP:-10.8.0.1}
+      - VPN_DOMAIN=${VPN_DOMAIN:-vpn.example.com}
+      - ALLOW_DUPLICATE_CN=${ALLOW_DUPLICATE_CN:-false}
     networks:
       - openvpn-network
 
