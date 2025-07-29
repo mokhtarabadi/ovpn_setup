@@ -57,8 +57,9 @@ echo ""
 
 # Container Status
 echo -e "${BLUE}🐳 Container Status:${NC}"
-if $COMPOSE_CMD ps 2>/dev/null | grep -q "openvpn"; then
-    if $COMPOSE_CMD ps 2>/dev/null | grep -q "running"; then
+COMPOSE_OUTPUT=$($COMPOSE_CMD ps 2>/dev/null)
+if echo "$COMPOSE_OUTPUT" | grep -q "openvpn"; then
+    if echo "$COMPOSE_OUTPUT" | grep "openvpn" | grep -q "Up"; then
         echo -e "  ${GREEN}✅ OpenVPN container is running${NC}"
         
         # Get container details
@@ -165,7 +166,7 @@ echo ""
 
 # Recent Logs (if container is running)
 echo -e "${BLUE}📋 Recent Activity:${NC}"
-if $COMPOSE_CMD ps 2>/dev/null | grep -q "running"; then
+if echo "$COMPOSE_OUTPUT" | grep "openvpn" | grep -q "Up"; then
     echo -e "     Last 5 log entries:"
     $COMPOSE_CMD logs --tail=5 openvpn 2>/dev/null | sed 's/^/       /' || echo "       No logs available"
 else
