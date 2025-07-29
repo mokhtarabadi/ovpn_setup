@@ -81,6 +81,14 @@ if [ "$DEVICE_NAME" != "tun0" ]; then
     "
 fi
 
+# Configure server port
+if [ "$PORT" != "1194" ]; then
+    echo -e "${YELLOW}   • Setting server port to: $PORT${NC}"
+    docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c "
+        sed -i 's/^port 1194$/port $PORT/' /etc/openvpn/openvpn.conf
+    "
+fi
+
 # Configure compression settings
 if [ "${COMPRESSION,,}" = "true" ]; then
     echo -e "${YELLOW}   • Enabling compression${NC}"

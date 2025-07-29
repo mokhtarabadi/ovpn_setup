@@ -7,6 +7,15 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Load configuration from .env file if it exists
+if [ -f .env ]; then
+    source .env
+fi
+
+# Set defaults if not defined in .env
+OPENVPN_PORT=${OPENVPN_PORT:-1194}
+OPENVPN_PROTOCOL=${OPENVPN_PROTOCOL:-udp}
+
 echo -e "${BLUE}📊 OpenVPN Server Status${NC}"
 echo "================================"
 
@@ -99,12 +108,11 @@ if docker run -v openvpn-data:/etc/openvpn --rm alpine test -f /etc/openvpn/open
     echo "$SERVER_CONFIG" | grep -E "(port |proto |server )" | sed 's/^/       /' 2>/dev/null || echo "       Config details not accessible"
     
     # Check port accessibility
-    PORT=$($COMPOSE_CMD ps 2>/dev/null | grep openvpn | grep -o '1194\|443\|[0-9]*194' | head -1 || echo "1194")
     echo -e "     Port Status:"
-    if netstat -tuln 2>/dev/null | grep -q ":${PORT:-1194}"; then
-        echo -e "       ${GREEN}✅ Port ${PORT:-1194}/UDP is listening${NC}"
+    if netstat -tuln 2>/dev/null | grep -q ":$OPENVPN_PORT"; then
+        echo -e "       ${GREEN}✅ Port $OPENVPN_PORT/$OPENVPN_PROTOCOL is listening${NC}"
     else
-        echo -e "       ${YELLOW}⚠️  Port ${PORT:-1194}/UDP status unclear${NC}"
+        echo -e "       ${YELLOW}⚠️  Port $OPENVPN_PORT/$OPENVPN_PROTOCOL status unclear${NC}"
     fi
 else
     echo -e "  ${RED}❌ Server configuration missing${NC}"
