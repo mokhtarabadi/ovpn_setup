@@ -71,11 +71,11 @@ if echo "$COMPOSE_OUTPUT" | grep -q "openvpn"; then
         
         # Resource usage
         echo -e "${BLUE}💾 Resource Usage:${NC}"
-        docker exec openvpn-server sh -c "
-            echo '  🖥️  CPU: '$(top -bn1 | grep '^CPU:' | awk '{print $2}' | sed 's/%us,//')' user'
-            echo '  🧠 Memory: '$(free -h | awk '/^Mem:/ {print $3 \"/\" $2}')
-            echo '  💽 Disk: '$(df -h /etc/openvpn | awk 'NR==2 {print $3 \"/\" $2 \" (\" $5 \" used)\"}')
-        " 2>/dev/null || echo -e "  ${YELLOW}⚠️  Resource info unavailable${NC}"
+        docker exec openvpn-server sh -c '
+            echo "  🖥️  CPU: $(top -bn1 | grep \"^CPU:\" | awk \"{print \$2}\" | sed \"s/%us,//\") user"
+            echo "  🧠 Memory: $(free -h | awk \"/^Mem:/ {print \$3\"/\"\$2}\")"
+            echo "  💽 Disk: $(df -h /etc/openvpn | awk \"NR==2 {print \$3\"/\"\$2\" (\"\$5\" used)\"}\")"
+        ' 2>/dev/null || echo -e "  ${YELLOW}⚠️  Resource info unavailable${NC}"
     else
         echo -e "  ${YELLOW}⚠️  OpenVPN container exists but not running${NC}"
         echo -e "     ${YELLOW}Start with: $COMPOSE_CMD up -d${NC}"
