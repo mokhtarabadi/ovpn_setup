@@ -20,7 +20,6 @@ NETWORK=${2:-${VPN_NETWORK:-10.8.0.0}}
 SERVER_IP=${3:-${VPN_SERVER_IP:-10.8.0.1}}
 PORT=${4:-${OPENVPN_PORT:-1194}}
 PROTOCOL=${5:-${OPENVPN_PROTOCOL:-udp}}
-HOST_IP=${HOST_IP:-172.17.0.1}
 
 # Validate protocol
 if [[ "$PROTOCOL" != "udp" && "$PROTOCOL" != "tcp" ]]; then
@@ -123,13 +122,13 @@ echo ""
 echo -e "${GREEN}🎉 OpenVPN P2P server initialization complete!${NC}"
 echo ""
 
-# Configure host access if not explicitly disabled
-if [ "${ENABLE_HOST_ACCESS:-true}" != "false" ]; then
-    echo -e "${BLUE}🔧 Configuring host access...${NC}"
-    if [ -f "./configure-host-access.sh" ]; then
-        ./configure-host-access.sh
+# Configure VPN port forwarding if not explicitly disabled
+if [ "${ENABLE_VPN_FORWARDING:-true}" != "false" ]; then
+    echo -e "${BLUE}🔧 Configuring VPN port forwarding...${NC}"
+    if [ -f "./manage-vpn-forwarding.sh" ]; then
+        sudo ./manage-vpn-forwarding.sh
     else
-        echo -e "${YELLOW}⚠️  configure-host-access.sh not found, skipping host access setup${NC}"
+        echo -e "${YELLOW}⚠️  manage-vpn-forwarding.sh not found, skipping port forwarding setup${NC}"
     fi
     echo ""
 fi

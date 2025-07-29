@@ -16,7 +16,7 @@ reliable [kylemanna/openvpn](https://hub.docker.com/r/kylemanna/openvpn/) Docker
 
 - **🔒 Client-to-Client P2P**: Team members can directly communicate with each other
 - **🚫 No Internet Routing**: Web browsing stays on local connections (no exit node)
-- **🏠 Host Service Access**: Access Docker host services from VPN clients
+- **🚀 VPN Port Forwarding**: Access Docker host services directly via VPN server IP (e.g., http://10.8.0.1:80)
 - **🔐 Strong Security**: AES-256-GCM encryption with certificate-based authentication
 - **📦 Docker-Based**: Easy deployment and management with Docker Compose
 - **🌐 Protocol Support**: Both UDP (fast) and TCP (reliable) protocols
@@ -31,7 +31,7 @@ reliable [kylemanna/openvpn](https://hub.docker.com/r/kylemanna/openvpn/) Docker
 ```bash
 # Copy and customize environment variables
 cp .env.example .env
-nano .env  # Set VPN_DOMAIN and optionally OPENVPN_PROTOCOL
+nano .env  # Set VPN_DOMAIN, VPN_FORWARD_PORTS and optionally OPENVPN_PROTOCOL
 ```
 
 ### 2. **Initialize OpenVPN Server**
@@ -79,6 +79,7 @@ docker compose up -d
 ├── status-openvpn.sh      # Server status monitoring
 ├── backup-openvpn.sh      # Backup certificates and config
 ├── validate-setup.sh      # Pre-deployment validation
+├── manage-vpn-forwarding.sh # VPN port forwarding management
 └── README.md              # This documentation
 ```
 
@@ -258,6 +259,10 @@ VPN_DOMAIN=your-server.example.com # Your server's public IP or domain
 VPN_NETWORK=10.8.0.0               # Internal VPN network range
 VPN_SERVER_IP=10.8.0.1             # VPN server's internal IP
 
+# VPN Port Forwarding Configuration
+VPN_FORWARD_PORTS=80,443,8080,3000 # Comma-separated list of ports to forward from VPN IP to Docker host
+DOCKER_HOST_IP=172.17.0.1          # Docker host IP (auto-detected if not set)
+
 # Multiple device connections per certificate
 ALLOW_DUPLICATE_CN=false           # false (secure) or true (convenient)
 ```
@@ -300,46 +305,47 @@ OPENVPN_PORT=22       # TCP on 22 (SSH port)
 - **VPN Network**: `10.8.0.0/24` (configurable)
 - **Server IP**: `10.8.0.1` (internal VPN IP)
 - **Client IPs**: `10.8.0.2` - `10.8.0.254` (auto-assigned)
-- **Host Access**: `172.17.0.1` (Docker host services)
+- **Port Forwarding**: VPN server IP forwards configured ports to Docker host
 - **Protocols**: UDP (default) or TCP
 - **Ports**: 1194/UDP (default) or 443/TCP (recommended)
 
-### Host Access Configuration
+### VPN Port Forwarding Configuration
 
 - **Host IP**: `172.17.0.1` (auto-detected)
-- **Enable Host Access**: `true` (enabled by default)
+- **Enable VPN Port Forwarding**: `true` (enabled by default)
 
 ---
 
-## 🏠 Host Service Access
+## 🏠 VPN Port Forwarding Overview
 
 ### Overview
 
-VPN clients can access services running on the Docker host (e.g., web apps on port 80, databases on port 5432) while
-maintaining P2P functionality.
+VPN clients can access services running on the Docker host (e.g., web apps on port 80, databases on port 5432) directly
+via the VPN server IP.
 
 ### Quick Setup
 
-Host access is automatically configured during initialization. No additional steps required!
+VPN port forwarding is automatically configured during initialization. No additional steps required!
 
 ### Usage Examples
 
 ```bash
 # From VPN client, access host services:
-curl http://172.17.0.1:80        # Web application
-psql -h 172.17.0.1 -p 5432       # Database
-curl http://172.17.0.1:8080/api  # API service
+curl http://10.8.0.1:80        # Web application
+psql -h 10.8.0.1 -p 5432       # Database
+curl http://10.8.0.1:8080/api  # API service
 ```
 
 ### Configuration
 
 ```bash
 # In .env file
-HOST_IP=172.17.0.1                # Docker host IP (auto-detected)
-ENABLE_HOST_ACCESS=true           # Enable/disable host access
+VPN_SERVER_IP=10.8.0.1                # VPN server IP (auto-detected)
+VPN_FORWARD_PORTS=80,443,8080,3000 # Comma-separated list of ports to forward from VPN IP to Docker host
+DOCKER_HOST_IP=172.17.0.1          # Docker host IP (auto-detected if not set)
 ```
 
-**📖 For detailed host access guide, see [HOST_ACCESS_GUIDE.md](HOST_ACCESS_GUIDE.md)**
+**📖 For detailed VPN port forwarding guide, see [VPN_PORT_FORWARDING_GUIDE.md](VPN_PORT_FORWARDING_GUIDE.md)**
 
 ---
 
@@ -408,6 +414,22 @@ sudo ufw allow 443/tcp   # TCP
 
 # Regenerate client config
 ./manage-client.sh username show
+```
+
+#### **Host services not accessible via VPN IP**
+
+```bash
+# Check port forwarding rules
+./manage-vpn-forwarding.sh show
+
+# Test specific port forwarding
+./manage-vpn-forwarding.sh test 80
+
+# Reapply port forwarding rules
+sudo ./manage-vpn-forwarding.sh
+
+# Check if ports are configured in .env
+grep VPN_FORWARD_PORTS .env
 ```
 
 #### **Protocol-specific issues**

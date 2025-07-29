@@ -24,7 +24,6 @@ services:
       - VPN_SERVER_IP=${VPN_SERVER_IP:-10.8.0.1}
       - VPN_DOMAIN=${VPN_DOMAIN:-vpn.example.com}
       - ALLOW_DUPLICATE_CN=${ALLOW_DUPLICATE_CN:-false}
-      - HOST_IP=${HOST_IP:-172.17.0.1}
     networks:
       - openvpn-network
 
