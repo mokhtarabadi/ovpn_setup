@@ -109,8 +109,8 @@ docker run -v openvpn-data:/etc/openvpn --rm -e EASYRSA_BATCH=1 -e EASYRSA_REQ_C
 
 echo -e "${GREEN}✅ PKI initialized successfully${NC}"
 
-# Configure for P2P communication (no internet routing)
-echo -e "${BLUE}🔧 Configuring for P2P communication...${NC}"
+# Configure for P2P communication (no internet routing, no host access)
+echo -e "${BLUE}🔧 Configuring for isolated P2P communication...${NC}"
 
 # Check if duplicate-cn should be enabled
 DUPLICATE_CN_CONFIG=""
@@ -123,19 +123,14 @@ else
     echo -e "${YELLOW}   • One connection per certificate (more secure)${NC}"
 fi
 
-# Simplify subnet mask calculation and use /24 subnet
-VPN_NETADDR="$NETWORK"
-VPN_NETMASK="255.255.255.0"
-
 docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c '
     sed -i "/^push.*redirect-gateway/d" /etc/openvpn/openvpn.conf
     sed -i "/^push.*dhcp-option.*DOMAIN/d" /etc/openvpn/openvpn.conf
     echo "client-to-client" >> /etc/openvpn/openvpn.conf
     '"$DUPLICATE_CN_CONFIG"'
-    echo "push \"route '"$VPN_NETADDR"' '"$VPN_NETMASK"'\"" >> /etc/openvpn/openvpn.conf
 '
 
-echo -e "${GREEN}✅ P2P configuration applied${NC}"
+echo -e "${GREEN}✅ Isolated P2P configuration applied${NC}"
 
 # Verify the setup
 echo -e "${BLUE}🔍 Verifying configuration...${NC}"
@@ -169,7 +164,7 @@ echo -e "  3. Check status: ${YELLOW}./status-openvpn.sh${NC}"
 echo ""
 echo -e "${YELLOW}📝 Notes:${NC}"
 echo -e "  • Protocol: $PROTOCOL on port $PORT"
-echo -e "  • Clients will be able to communicate with each other"
+echo -e "  • Clients will be able to communicate with each other (P2P only)"
 echo -e "  • Internet traffic will NOT be routed through the VPN"
 echo -e "  • Each client will get an IP in the $NETWORK/24 range"
-echo -e "  • Host services accessible at 10.8.0.1 via host networking"
+echo -e "  • Network is isolated - no host or external network access"
