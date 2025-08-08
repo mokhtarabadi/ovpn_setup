@@ -310,8 +310,35 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 🔐 [VPN Security Best Practices](https://www.nist.gov/publications)
 - 🛡️ [Network Security Guidelines](https://csrc.nist.gov/)
 
----
+## OpenVPN Client On-Demand Forwarding (Systemd Service)
 
+A ready-to-use systemd-based solution is included to bring up an OpenVPN client on-demand and automatically expose
+selected localhost services to other VPN clients via iptables. When the service stops, all rules are cleaned up and
+access is cut off.
+
+- What it does:
+    - Starts an OpenVPN client (using your .ovpn)
+    - Reads ports from a simple .env file
+    - Programs iptables DNAT rules to forward VPN_IP:port -> 127.0.0.1:port
+    - Cleans rules on stop
+
+- Quick start:
+    - Copy your .ovpn to the target server
+    - Run the installer script to place service/scripts/config
+    - Enable and start the service when needed
+
+For complete instructions, troubleshooting, and examples, see:
+
+- OPENVPN_CLIENT_FORWARDING_README.md
+
+Short reference:
+
+- Service: `openvpn-client-forwarding.service`
+- Config: `/etc/openvpn/client/openvpn-client-forwarding.env`
+- Helper script: `/etc/openvpn/client/setup-port-forwarding.sh`
+- Installer: `install-openvpn-client-forwarding.sh`
+
+---
 **⭐ Star this repository if it helped you create a secure P2P network!**
 
 *Keywords: OpenVPN, Docker, P2P VPN, Secure Network, Container Networking, Private Network, Team Communication, Network
