@@ -40,6 +40,20 @@ Perfect for:
 - Open firewall port (1194/UDP or 443/TCP)
 - Linux host system (recommended)
 
+**🔥 Firewall Configuration Required:**
+
+```bash
+# UFW (Ubuntu/Debian) - Open OpenVPN server port
+sudo ufw allow 1194/udp
+
+# firewalld (CentOS/RHEL/Fedora)
+sudo firewall-cmd --permanent --add-port=1194/udp
+sudo firewall-cmd --reload
+
+# iptables (manual)
+sudo iptables -I INPUT -p udp --dport 1194 -j ACCEPT
+```
+
 ### 2. ⚙️ Configuration
 
 ```bash
@@ -211,13 +225,14 @@ docker volume inspect openvpn-data  # Inspect volume details
 
 ### Common Issues & Solutions
 
-| Issue                    | Solution                                           |
-|--------------------------|----------------------------------------------------|
-| 🔥 Port blocked          | Open firewall port: `sudo ufw allow 1194/udp`      |
-| 🐳 Container won't start | Check logs: `docker compose logs openvpn`          |
-| 📡 Client can't connect  | Verify domain/IP in .env matches server            |
-| 🔐 Certificate errors    | Regenerate: `./init-openvpn.sh` (removes old data) |
-| 🌐 Network conflicts     | Change VPN_NETWORK in .env to unused range         |
+| Issue                    | Solution                                                     |
+|--------------------------|--------------------------------------------------------------|
+| 🔥 Port blocked          | **CRITICAL**: Open firewall port: `sudo ufw allow 1194/udp`  |
+| 🐳 Container won't start | Check logs: `docker compose logs openvpn`                    |
+| 📡 Client can't connect  | Verify domain/IP in .env matches server + firewall port open |
+| 🔐 Certificate errors    | Regenerate: `./init-openvpn.sh` (removes old data)           |
+| 🌐 Network conflicts     | Change VPN_NETWORK in .env to unused range                   |
+| 🚫 Port forwarding fails | Service must bind to `0.0.0.0:port`, not `127.0.0.1:port`    |
 
 ### Diagnostic Commands
 

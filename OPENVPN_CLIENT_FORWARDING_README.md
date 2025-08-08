@@ -35,13 +35,26 @@ You have an OpenVPN server running (like the one in this workspace), and you wan
    sudo dnf install openvpn
    ```
 
-2. **Generate a client certificate** from your OpenVPN server:
+2. **Firewall Configuration** - OpenVPN server port must be accessible:
+   ```bash
+   # UFW (Ubuntu/Debian)
+   sudo ufw allow 1194/udp
+   
+   # firewalld (CentOS/RHEL/Fedora)
+   sudo firewall-cmd --permanent --add-port=1194/udp
+   sudo firewall-cmd --reload
+   
+   # iptables (manual)
+   sudo iptables -I INPUT -p udp --dport 1194 -j ACCEPT
+   ```
+
+3. **Generate a client certificate** from your OpenVPN server:
    ```bash
    # On your OpenVPN server (this workspace)
    ./manage-client.sh myclient-server add
    ```
 
-3. **Transfer the .ovpn file** to your target server
+4. **Transfer the .ovpn file** to your target server
 
 ### Install the Service
 
@@ -148,7 +161,31 @@ VPN Client (10.8.0.2) → OpenVPN Server → Target Server (10.8.0.10)
                                         localhost:port
 ```
 
-### 3. Service Shutdown Sequence
+### 3. Service Binding Requirements
+
+⚠️ **Important**: Services must be properly configured to accept DNAT'd traffic:
+
+**❌ Won't work:**
+
+```bash
+# Bound to 127.0.0.1 only - rejects DNAT traffic
+python3 -m http.server 3000 --bind 127.0.0.1
+```
+
+**✅ Will work:**
+
+```bash
+# Bound to all interfaces - accepts DNAT traffic
+python3 -m http.server 3000 --bind 0.0.0.0
+
+# Or bound to VPN IP specifically  
+python3 -m http.server 3000 --bind 10.8.0.6
+```
+
+**Why?** When iptables performs DNAT, the packet source IP remains the original VPN client IP (e.g., 10.8.0.4), but the
+destination becomes 127.0.0.1:port. Services bound only to 127.0.0.1 reject connections from non-loopback source IPs.
+
+### 4. Service Shutdown Sequence
 
 1. **Cleanup Signal**: Removes iptables rules
 2. **OpenVPN Stop**: Terminates OpenVPN client connection
@@ -198,17 +235,25 @@ sudo iptables -L OPENVPN_CLIENT_ACCEPT -v
 1. **"VPN interface did not come up"**
     - Check OpenVPN client configuration
     - Verify server connectivity
-    - Check firewall rules
+   - Check firewall rules on OpenVPN server
+   - Ensure OpenVPN server port is open: `sudo ufw allow 1194/udp`
 
 2. **"Port forwarding not working"**
-    - Verify service is running on localhost
+    - ✅ Verify service is bound to `0.0.0.0:port` or VPN IP, NOT `127.0.0.1:port`
     - Check iptables rules are applied
     - Test from another VPN client
+   - Verify service is actually running
 
 3. **"Service fails to start"**
     - Check configuration file syntax
     - Verify OpenVPN client config exists
     - Check system logs
+   - Ensure OpenVPN server is accessible
+
+4. **"Can connect to VPN but can't access forwarded ports"**
+    - Most common cause: Service bound to 127.0.0.1 instead of 0.0.0.0
+    - Check service binding: `ss -tlnp | grep <port>`
+    - Restart service with correct binding
 
 ## 🔒 Security Considerations
 
@@ -222,18 +267,32 @@ sudo iptables -L OPENVPN_CLIENT_ACCEPT -v
 ### Example 1: Web Development Server
 
 ```bash
+# ❌ Wrong way (won't work with DNAT)
+python3 -m http.server 3000 --bind 127.0.0.1
+
+# ✅ Correct way (works with DNAT)  
+python3 -m http.server 3000 --bind 0.0.0.0
+
 # Configuration
 FORWARD_PORTS="22:tcp 3000:tcp 8080:tcp"
 
 # Access from VPN client
 ssh user@10.8.0.10                    # SSH to server
-curl http://10.8.0.10:3000           # Access development server
+curl http://10.8.0.10:3000           # Access development server  
 curl http://10.8.0.10:8080           # Access alternative port
 ```
 
 ### Example 2: Database Server
 
 ```bash
+# ✅ Correct MySQL configuration
+# Edit /etc/mysql/mysql.conf.d/mysqld.cnf
+bind-address = 0.0.0.0  # Instead of 127.0.0.1
+
+# ✅ Correct PostgreSQL configuration  
+# Edit /etc/postgresql/*/main/postgresql.conf
+listen_addresses = '*'  # Instead of 'localhost'
+
 # Configuration  
 FORWARD_PORTS="3306:tcp 5432:tcp"
 
@@ -245,6 +304,14 @@ psql -h 10.8.0.10 -U user dbname     # PostgreSQL connection
 ### Example 3: Production Web Services
 
 ```bash
+# ✅ Correct Nginx configuration
+# Edit /etc/nginx/sites-available/default  
+server {
+    listen 0.0.0.0:80;  # Instead of 127.0.0.1:80
+    listen 0.0.0.0:443 ssl;  # Instead of 127.0.0.1:443
+    ...
+}
+
 # Configuration
 FORWARD_PORTS="80:tcp 443:tcp"
 
