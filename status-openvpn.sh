@@ -81,9 +81,42 @@ if echo "$COMPOSE_OUTPUT" | grep -q "openvpn"; then
         # Resource usage
         echo -e "${BLUE}💾 Resource Usage:${NC}"
         docker exec openvpn-server sh -c '
-            echo "  🖥️  CPU: $(top -bn1 | grep \"^CPU:\" | awk \"{print \$2}\" | sed \"s/%us,//\") user"
-            echo "  🧠 Memory: $(free -h | awk \"/^Mem:/ {print \$3\"/\"\$2}\")"
-            echo "  💽 Disk: $(df -h /etc/openvpn | awk \"NR==2 {print \$3\"/\"\$2\" (\"\$5\" used)\"}\")"
+            # Get CPU usage from top
+            CPU_INFO=$(top -bn1 | grep "^CPU:" | head -1)
+            if [ -n "$CPU_INFO" ]; then
+                USER_CPU=$(echo "$CPU_INFO" | awk "{print \$2}")
+                SYS_CPU=$(echo "$CPU_INFO" | awk "{print \$4}")
+                IDLE_CPU=$(echo "$CPU_INFO" | awk "{print \$8}")
+                echo "  🖥️  CPU: $USER_CPU user, $SYS_CPU system, $IDLE_CPU idle"
+            else
+                echo "  🖥️  CPU: Info unavailable"
+            fi
+            
+            # Get memory usage from free (BusyBox version)
+            MEM_INFO=$(free | grep "^Mem:" | head -1)
+            if [ -n "$MEM_INFO" ]; then
+                TOTAL_KB=$(echo "$MEM_INFO" | awk "{print \$2}")
+                USED_KB=$(echo "$MEM_INFO" | awk "{print \$3}")
+                # Convert KB to human readable format
+                if [ "$TOTAL_KB" -gt 1048576 ]; then
+                    TOTAL_MB=$((TOTAL_KB / 1024))
+                    USED_MB=$((USED_KB / 1024))
+                    echo "  🧠 Memory: ${USED_MB}MB / ${TOTAL_MB}MB used"
+                else
+                    echo "  🧠 Memory: ${USED_KB}KB / ${TOTAL_KB}KB used"
+                fi
+            else
+                echo "  🧠 Memory: Info unavailable"
+            fi
+            
+            # Get disk usage
+            DISK_INFO=$(df -h /etc/openvpn 2>/dev/null | tail -1)
+            if [ -n "$DISK_INFO" ]; then
+                DISK_USAGE=$(echo "$DISK_INFO" | awk "{print \$3\"/\"\$2\" (\"\$5\" used)\"}")
+                echo "  💽 Disk: $DISK_USAGE"
+            else
+                echo "  💽 Disk: Info unavailable"
+            fi
         ' 2>/dev/null || echo -e "  ${YELLOW}⚠️  Resource info unavailable${NC}"
     else
         echo -e "  ${YELLOW}⚠️  OpenVPN container exists but not running${NC}"
