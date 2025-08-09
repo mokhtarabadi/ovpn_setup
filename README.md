@@ -193,6 +193,74 @@ scp file.txt user@10.8.0.4:/path/   # Secure file transfer
 rsync -av folder/ user@10.8.0.5:/dest/  # Sync directories
 ```
 
+## 🔗 Localhost to VPN Bridge (Socat Relay System)
+
+### Accessing Localhost Services via VPN
+
+Transform your localhost-bound services into VPN-accessible applications with our automated socat relay system.
+
+**🎯 Perfect for:**
+
+- Development servers (React, Node.js, Python, etc.)
+- Database access (PostgreSQL, MySQL, Redis)
+- API services and monitoring tools
+- Any localhost service you need to access via VPN
+
+### Quick Localhost Bridge Setup
+
+```bash
+# Configure services to relay
+nano .env.socat
+
+# Example configuration:
+SOCAT_VPN_IP=10.8.0.6                 # Your VPN IP (auto-detected)
+SOCAT_PORTS=3000:HTTP Dev,8080:API,5432:PostgreSQL,9090:Monitoring
+
+# Install and start relay service
+./manage-socat-relays.sh install      # Install system-wide
+./manage-socat-relays.sh ufw-rules     # Apply firewall rules  
+./manage-socat-relays.sh start         # Start relay services
+./manage-socat-relays.sh enable        # Enable auto-start
+```
+
+### Service Management
+
+```bash
+# Monitoring and control
+./manage-socat-relays.sh status        # Check service status
+./manage-socat-relays.sh logs          # View service logs
+./manage-socat-relays.sh restart       # Restart all relays
+
+# Configuration management
+./manage-socat-relays.sh config        # Show current config
+./manage-socat-relays.sh ufw-rules     # Show UFW rules needed
+```
+
+### Example Usage
+
+```bash
+# Start your localhost development server
+npm start                              # React app on localhost:3000
+python manage.py runserver             # Django on localhost:8000
+
+# Configure relay for these ports
+echo "SOCAT_PORTS=3000:React App,8000:Django API" > .env.socat
+
+# Access from any VPN client
+curl http://10.8.0.6:3000              # Access React app via VPN
+curl http://10.8.0.6:8000/api/         # Access Django API via VPN
+```
+
+### 🛡️ Security Features
+
+- **VPN-Only Access** - Services only accessible via VPN clients (10.8.0.0/24)
+- **Firewall Protected** - Automatic UFW rule generation
+- **Systemd Managed** - Reliable service management with auto-restart
+- **Process Isolation** - Security hardened service configuration
+
+📖 **[Complete Socat Relay Documentation](SOCAT-VPN-RELAY.md)** - Detailed setup, configuration, and troubleshooting
+guide.
+
 ## 🛠️ Management Commands
 
 ### Server Operations
@@ -323,6 +391,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 🐳 [Docker Compose Documentation](https://docs.docker.com/compose/)
 - 🔐 [VPN Security Best Practices](https://www.nist.gov/publications)
 - 🛡️ [Network Security Guidelines](https://csrc.nist.gov/)
+- 🔗 **[Socat VPN Relay System](SOCAT-VPN-RELAY.md)** - Localhost to VPN bridge documentation
 
 ---
 **⭐ Star this repository if it helped you create a secure P2P network!**
