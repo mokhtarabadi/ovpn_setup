@@ -66,6 +66,13 @@ done
 
 # Create backup info file
 echo -e "${BLUE}📝 Creating backup manifest...${NC}"
+
+# Check for static IP assignments
+STATIC_IPS_COUNT=0
+if docker run -v openvpn-data:/etc/openvpn --rm alpine test -d /etc/openvpn/ccd 2>/dev/null; then
+    STATIC_IPS_COUNT=$(docker run -v openvpn-data:/etc/openvpn --rm alpine find /etc/openvpn/ccd -type f -name '*' | wc -l 2>/dev/null || echo "0")
+fi
+
 cat > "$TEMP_DIR/backup_info.txt" << EOF
 OpenVPN P2P Backup
 ==================
@@ -73,9 +80,11 @@ Backup Date: $(date)
 Backup Type: Full system backup
 Server IP: $(grep VPN_DOMAIN .env 2>/dev/null | cut -d= -f2 || echo "Unknown")
 Network: $(docker run -v openvpn-data:/etc/openvpn --rm alpine grep "^server " /etc/openvpn/openvpn.conf 2>/dev/null || echo "Unknown")
+Static IP Assignments: $STATIC_IPS_COUNT clients
 
 Contents:
 - OpenVPN volume data (certificates, keys, configuration)
+- Client Configuration Directory (CCD) with static IP assignments
 - Docker Compose configuration
 - Management scripts
 - Environment configuration
@@ -84,6 +93,7 @@ Restoration Instructions:
 1. Extract this backup: tar xzf $BACKUP_FILE
 2. Restore volume: docker run --rm -v openvpn-data:/target -v \$(pwd):/backup alpine sh -c 'cd /target && tar xzf /backup/openvpn-data.tar.gz'
 3. Start server: docker compose up -d
+4. Static IP assignments will be automatically restored
 EOF
 
 # Create final backup archive
@@ -101,6 +111,7 @@ echo ""
 echo -e "${YELLOW}📦 Backup Contents:${NC}"
 echo -e "  • OpenVPN certificates and keys"
 echo -e "  • Server configuration"
+echo -e "  • Client static IP assignments ($STATIC_IPS_COUNT clients)"
 echo -e "  • Docker Compose configuration"
 echo -e "  • Environment variables"
 echo -e "  • Management scripts"

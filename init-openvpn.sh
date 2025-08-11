@@ -28,6 +28,7 @@ PROTOCOL=${5:-${OPENVPN_PROTOCOL:-udp}}
 # Restore environment variables with proper precedence (env vars > .env > defaults)
 DEVICE_NAME=${ENV_TUN_DEVICE_NAME:-${TUN_DEVICE_NAME:-tun0}}
 COMPRESSION=${ENV_ENABLE_COMPRESSION:-${ENABLE_COMPRESSION:-false}}
+STATIC_IPS_ENABLED=${ENABLE_STATIC_IPS:-true}
 
 # Validate protocol
 if [[ "$PROTOCOL" != "udp" && "$PROTOCOL" != "tcp" ]]; then
@@ -44,6 +45,7 @@ echo -e "${YELLOW}Network: $NETWORK${NC}"
 echo -e "${YELLOW}Server IP: $SERVER_IP${NC}"
 echo -e "${YELLOW}Device Name: $DEVICE_NAME${NC}"
 echo -e "${YELLOW}Compression: $COMPRESSION${NC}"
+echo -e "${YELLOW}Static IPs Enabled: $STATIC_IPS_ENABLED${NC}"
 echo ""
 
 # Protocol-specific information
@@ -98,6 +100,17 @@ if [ "${COMPRESSION,,}" = "true" ]; then
     '
 else
     echo -e "${YELLOW}   • Compression disabled (default)${NC}"
+fi
+
+# Enable static IP support if enabled
+if [ "${STATIC_IPS_ENABLED,,}" = "true" ]; then
+    echo -e "${YELLOW}   • Enabling static IP support${NC}"
+    docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c '
+        echo "client-config-dir ccd" >> /etc/openvpn/openvpn.conf
+        mkdir -p /etc/openvpn/ccd
+    '
+else
+    echo -e "${YELLOW}   • Static IP support disabled${NC}"
 fi
 
 # Initialize PKI (Public Key Infrastructure) without password for automation
@@ -168,3 +181,6 @@ echo -e "  • Clients will be able to communicate with each other (P2P only)"
 echo -e "  • Internet traffic will NOT be routed through the VPN"
 echo -e "  • Each client will get an IP in the $NETWORK/24 range"
 echo -e "  • Network is isolated - no host or external network access"
+if [ "${STATIC_IPS_ENABLED,,}" = "true" ]; then
+    echo -e "  • Static IP assignment available via: ${YELLOW}./manage-client.sh <client-name> set-static-ip <ip>${NC}"
+fi

@@ -6,6 +6,30 @@
 
 **🚀 Easy-to-deploy, secure peer-to-peer VPN solution with complete network isolation**
 
+## 🆕 What's New - Static IP Assignment!
+
+**🎯 NEW FEATURE:** Certificate-based static IP assignment is now available! Assign predictable IP addresses to specific
+clients for monitoring, firewall rules, or service dependencies.
+
+**Key Benefits:**
+
+- 🔒 **Secure & Reliable** - Uses certificate Common Name (CN) as identifier
+- 🔄 **Backward Compatible** - Existing clients continue working unchanged
+- ⚡ **Easy Management** - Simple commands to assign and manage static IPs
+- 📊 **Conflict Prevention** - Automatic validation and IP range management
+
+**Quick Example:**
+
+```bash
+# Assign static IP to a client
+./manage-client.sh alice set-static-ip 10.8.0.100
+
+# For existing installations - upgrade first
+./upgrade-static-ips.sh
+```
+
+**[📖 Complete Static IP Documentation](#-static-ip-assignment)**
+
 Transform your network into a secure, isolated peer-to-peer communication hub. This Docker-based OpenVPN server provides
 enterprise-grade security while maintaining simplicity and ease of use.
 
@@ -30,6 +54,19 @@ Perfect for:
 - **Gaming Networks** - Low-latency peer-to-peer gaming
 - **File Sharing Networks** - Secure peer-to-peer file distribution
 - **Remote Work Teams** - Secure team collaboration without internet routing
+
+## 🔧 Upgrade for Existing Users
+
+If you're already using this OpenVPN setup, you can upgrade to the latest version with static IP assignment support by
+running the following command:
+
+```bash
+# Upgrade existing installation to support static IPs
+./upgrade-static-ips.sh
+```
+
+This upgrade process is safe and won't interrupt existing client connections. After upgrading, you can start assigning
+static IPs to your clients.
 
 ## 🚀 Quick Start Guide
 
@@ -192,6 +229,126 @@ nc 10.8.0.6 8080       # Connect to service on another client
 scp file.txt user@10.8.0.4:/path/   # Secure file transfer
 rsync -av folder/ user@10.8.0.5:/dest/  # Sync directories
 ```
+
+## 🔢 Static IP Assignment
+
+### Overview
+
+By default, OpenVPN clients receive dynamic IP addresses from the configured pool. For scenarios requiring predictable
+client IPs (monitoring, firewall rules, service dependencies), you can assign static IP addresses to specific clients.
+
+**Key Features:**
+
+- 🎯 **Certificate-based assignment** - Uses client certificate Common Name (CN) as identifier
+- 🔒 **Secure and reliable** - No dependency on MAC addresses or hardware
+- 🔄 **Backward compatible** - Existing clients continue working with dynamic IPs
+- ⚡ **Easy management** - Simple commands to assign, remove, and view static IPs
+- 📊 **Conflict prevention** - Automatic validation and conflict detection
+
+### Configuration
+
+Static IP support is enabled by default in new installations. The IP ranges are configurable in `.env`:
+
+```bash
+# Static IP Configuration
+ENABLE_STATIC_IPS=true             # Enable/disable static IP support
+STATIC_IP_RANGE_START=10.8.0.50    # Start of static IP range
+STATIC_IP_RANGE_END=10.8.0.200     # End of static IP range
+DYNAMIC_IP_RANGE_START=10.8.0.10   # Start of dynamic IP range  
+DYNAMIC_IP_RANGE_END=10.8.0.49     # End of dynamic IP range
+```
+
+### Usage Examples
+
+```bash
+# Assign static IP to existing client
+./manage-client.sh alice set-static-ip 10.8.0.100
+
+# View client's static IP assignment
+./manage-client.sh alice show-static
+
+# List all clients with static IPs
+./manage-client.sh list-static
+
+# Remove static IP (client will use dynamic IP)
+./manage-client.sh alice remove-static-ip
+
+# Regular client management still works
+./manage-client.sh bob add           # Creates client with dynamic IP
+./manage-client.sh list              # Lists all clients
+```
+
+### Network Layout with Static IPs
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    🔒 VPN Network: 10.8.0.0/24                 │
+│                                                                 │
+│  Server: 10.8.0.1                                              │
+│                                                                 │
+│  📊 Dynamic Pool: 10.8.0.10 - 10.8.0.49 (40 addresses)        │
+│  • New clients get IPs from this range automatically           │
+│                                                                 │
+│  🎯 Static Pool: 10.8.0.50 - 10.8.0.200 (151 addresses)       │
+│  • alice     -> 10.8.0.100 (static)                            │
+│  • bob       -> 10.8.0.101 (static)                            │
+│  • server-1  -> 10.8.0.150 (static)                            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Upgrading Existing Installations
+
+For existing OpenVPN installations, use the upgrade script:
+
+```bash
+# Enable static IP support on existing installation
+./upgrade-static-ips.sh
+
+# Then assign static IPs to existing clients
+./manage-client.sh existing-client set-static-ip 10.8.0.75
+```
+
+**✅ Safe Upgrade Process:**
+
+- Existing clients continue working without interruption
+- No certificate regeneration required
+- Server restart handled automatically
+- Rollback friendly (simply don't assign static IPs)
+
+### Best Practices
+
+1. **📋 Plan IP Allocation**
+    - Reserve ranges for different purposes (users, servers, devices)
+    - Document IP assignments for team reference
+    - Use meaningful IP patterns (e.g., 10.8.0.100-120 for users, 10.8.0.150-200 for servers)
+
+2. **🔒 Security Considerations**
+    - Static IPs are tied to client certificates (secure)
+    - Revoked clients automatically lose their static IPs
+    - One static IP per client certificate (prevents conflicts)
+
+3. **🔧 Management Tips**
+    - Use `list-static` regularly to audit assignments
+    - Remove static IPs before revoking clients (cleaner)
+    - Test static IP assignments with ping after assignment
+
+### Troubleshooting
+
+| Issue                             | Solution                                                      |
+|-----------------------------------|---------------------------------------------------------------|
+| 🚫 "Static IP support disabled"   | Run `./upgrade-static-ips.sh` or set `ENABLE_STATIC_IPS=true` |
+| ❌ "IP already assigned"           | Use `./manage-client.sh list-static` to find conflicts        |
+| 🌐 "IP outside static range"      | Check `.env` file for correct `STATIC_IP_RANGE_START/END`     |
+| 🔄 "Client not getting static IP" | Server restart required: `docker compose restart`             |
+
+### Technical Details
+
+- **Method**: OpenVPN `client-config-dir` with `ifconfig-push`
+- **Identifier**: Client certificate Common Name (CN)
+- **Configuration**: Individual files in `/etc/openvpn/ccd/` directory
+- **Persistence**: Stored in Docker volume, survives container restarts
+- **Validation**: IP format, range, and conflict checking built-in
 
 ## 🔗 Localhost to VPN Bridge (Socat Relay System)
 
