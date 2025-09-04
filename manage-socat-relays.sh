@@ -38,24 +38,26 @@ show_usage() {
     echo -e "  $0 <action> [options]"
     echo ""
     echo -e "${YELLOW}Actions:${NC}"
-    echo -e "  install     - Install socat relay service system-wide"
-    echo -e "  uninstall   - Remove socat relay service from system"
-    echo -e "  start       - Start all socat relay services"
-    echo -e "  stop        - Stop all socat relay services"
-    echo -e "  restart     - Restart all socat relay services"
-    echo -e "  status      - Show status of all socat relay services"
-    echo -e "  enable      - Enable auto-start on boot"
-    echo -e "  disable     - Disable auto-start on boot"
-    echo -e "  config      - Show current configuration"
-    echo -e "  ufw-rules   - Show UFW rules needed for configured ports"
-    echo -e "  logs        - Show service logs"
-    echo -e "  help        - Show this help message"
+    echo -e "  install         - Install socat relay service system-wide"
+    echo -e "  uninstall       - Remove socat relay service from system"
+    echo -e "  start           - Start all socat relay services"
+    echo -e "  stop            - Stop all socat relay services"
+    echo -e "  restart         - Restart all socat relay services"
+    echo -e "  status          - Show status of all socat relay services"
+    echo -e "  enable          - Enable auto-start on boot"
+    echo -e "  disable         - Disable auto-start on boot"
+    echo -e "  config          - Show current configuration"
+    echo -e "  ufw-rules       - Show UFW rules needed for configured ports"
+    echo -e "  remove-ufw-rules - Remove UFW rules created for configured ports"
+    echo -e "  logs            - Show service logs"
+    echo -e "  help            - Show this help message"
     echo ""
     echo -e "${YELLOW}Examples:${NC}"
     echo -e "  $0 install              # Install service system-wide"
     echo -e "  $0 start                # Start all relay services"
     echo -e "  $0 status               # Check status"
     echo -e "  $0 ufw-rules            # Show required firewall rules"
+    echo -e "  $0 remove-ufw-rules     # Remove firewall rules"
     echo -e "  $0 logs                 # View service logs"
 }
 
@@ -600,19 +602,19 @@ show_ufw_rules() {
 show_logs() {
     echo -e "${BLUE}📜 Socat VPN Relay Service Logs${NC}"
     echo "================================"
-    
+
     local config_file="$INSTALL_CONFIG_FILE"
     if [ ! -f "$config_file" ]; then
         config_file="$CONFIG_FILE"
     fi
-    
+
     if [ ! -f "$config_file" ]; then
         echo -e "${RED}❌ No configuration found${NC}"
         return 1
     fi
-    
+
     load_config "$config_file"
-    
+
     # Show logs for all configured services
     local services=()
     parse_ports "$SOCAT_PORTS" | while read -r port_config; do
@@ -621,17 +623,70 @@ show_logs() {
             services+=("socat-vpn-relay@${port}.service")
         fi
     done
-    
+
     if [ ${#services[@]} -eq 0 ]; then
         echo -e "${YELLOW}No services configured${NC}"
         return 1
     fi
-    
+
     echo -e "${YELLOW}Following logs for: ${services[*]}${NC}"
     echo -e "${YELLOW}Press Ctrl+C to exit${NC}"
     echo ""
-    
+
     sudo journalctl -f -u "socat-vpn-relay@*.service"
+}
+
+remove_ufw_rules() {
+    echo -e "${BLUE}🗑️  Remove UFW Firewall Rules${NC}"
+    echo "================================"
+
+    local config_file="$INSTALL_CONFIG_FILE"
+    if [ ! -f "$config_file" ]; then
+        config_file="$CONFIG_FILE"
+    fi
+
+    if [ ! -f "$config_file" ]; then
+        echo -e "${RED}❌ No configuration found${NC}"
+        return 1
+    fi
+
+    load_config "$config_file"
+
+    echo -e "${YELLOW}UFW rules to remove for VPN relay:${NC}"
+    echo ""
+
+    parse_ports "$SOCAT_PORTS" | while read -r port_config; do
+        if [ -n "$port_config" ]; then
+            local port=$(echo "$port_config" | cut -d':' -f1)
+            local description=$(echo "$port_config" | cut -d':' -f2-)
+            echo -e "  ${RED}sudo ufw delete allow from 10.8.0.0/24 to any port $port${NC}"
+        fi
+    done
+
+    echo ""
+    echo -e "${BLUE}ℹ️  These commands will remove the VPN relay firewall rules${NC}"
+    echo -e "${BLUE}   Ports will no longer be accessible from VPN clients${NC}"
+
+    echo ""
+    echo -e "${YELLOW}⚡ Remove all rules?${NC} (y/N)"
+    read -r confirm
+    if [[ $confirm =~ ^[Yy]$ ]]; then
+        parse_ports "$SOCAT_PORTS" | while read -r port_config; do
+            if [ -n "$port_config" ]; then
+                local port=$(echo "$port_config" | cut -d':' -f1)
+                local description=$(echo "$port_config" | cut -d':' -f2-)
+                echo -e "${BLUE}Removing UFW rule for port $port...${NC}"
+                if sudo ufw delete allow from 10.8.0.0/24 to any port "$port" 2>/dev/null; then
+                    echo -e "${GREEN}✅ Removed UFW rule for port $port${NC}"
+                else
+                    echo -e "${YELLOW}⚠️  UFW rule for port $port not found or already removed${NC}"
+                fi
+            fi
+        done
+        echo -e "${GREEN}✅ UFW rules removal complete${NC}"
+    else
+        echo -e "${BLUE}UFW rules removal cancelled${NC}"
+    fi
 }
 
 # Main script logic
@@ -665,6 +720,9 @@ case "$ACTION" in
         ;;
     "ufw-rules")
         show_ufw_rules
+        ;;
+    "remove-ufw-rules")
+        remove_ufw_rules
         ;;
     "logs")
         show_logs

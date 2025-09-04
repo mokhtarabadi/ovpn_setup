@@ -457,7 +457,7 @@ set_static_ip() {
     # Set static IP configuration
     echo -e "${BLUE}📝 Creating static IP configuration...${NC}"
     docker run -v openvpn-data:/etc/openvpn --rm alpine sh -c "
-        echo 'ifconfig-push $static_ip 10.8.0.1' > /etc/openvpn/ccd/$client_name
+        echo 'ifconfig-push $static_ip 255.255.255.0' > /etc/openvpn/ccd/$client_name
         echo '# Static IP assigned: $static_ip' >> /etc/openvpn/ccd/$client_name
         echo '# Created: $(date)' >> /etc/openvpn/ccd/$client_name
     "

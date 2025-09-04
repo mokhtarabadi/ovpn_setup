@@ -32,7 +32,7 @@ if ! docker volume inspect openvpn-data >/dev/null 2>&1; then
 fi
 
 # Check server status
-if docker compose ps 2>/dev/null | grep -q "running"; then
+if docker compose ps 2>/dev/null | grep -q "Up"; then
     echo -e "${GREEN}✅ OpenVPN server is running - backup will include live data${NC}"
 elif docker compose ps 2>/dev/null | grep -q "openvpn"; then
     echo -e "${YELLOW}⚠️  OpenVPN server exists but not running${NC}"
