@@ -99,7 +99,11 @@ if [ "${COMPRESSION,,}" = "true" ]; then
         echo "comp-lzo" >> /etc/openvpn/openvpn.conf
     '
 else
-    echo -e "${YELLOW}   • Compression disabled (default)${NC}"
+    echo -e "${YELLOW}   • Compression disabled (DCO compatible)${NC}"
+    docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c '
+        sed -i "/^comp-lzo/d" /etc/openvpn/openvpn.conf
+        echo "comp-lzo no" >> /etc/openvpn/openvpn.conf
+    '
 fi
 
 # Enable static IP support if enabled
@@ -141,6 +145,15 @@ docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c '
     sed -i "/^push.*dhcp-option.*DOMAIN/d" /etc/openvpn/openvpn.conf
     echo "client-to-client" >> /etc/openvpn/openvpn.conf
     '"$DUPLICATE_CN_CONFIG"'
+'
+
+# Ensure proper ifconfig-push for Windows DCO compatibility
+echo -e "${BLUE}🔧 Ensuring Windows DCO compatibility...${NC}"
+docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c '
+    # Remove any incorrect ifconfig-push settings that might use netmask as remote
+    sed -i "/^ifconfig-push.*255\.255\.255\.0/d" /etc/openvpn/openvpn.conf
+    # Ensure server directive is correct for TUN mode
+    sed -i "s/^server .*/server 10.8.0.0 255.255.255.0/" /etc/openvpn/openvpn.conf
 '
 
 echo -e "${GREEN}✅ Isolated P2P configuration applied${NC}"
