@@ -154,6 +154,9 @@ docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn sh -c '
     sed -i "/^ifconfig-push.*255\.255\.255\.0/d" /etc/openvpn/openvpn.conf
     # Ensure server directive is correct for TUN mode
     sed -i "s/^server .*/server 10.8.0.0 255.255.255.0/" /etc/openvpn/openvpn.conf
+    # Fix topology for Windows TAP compatibility
+    sed -i "/^topology net30/d" /etc/openvpn/openvpn.conf
+    echo "topology subnet" >> /etc/openvpn/openvpn.conf
 '
 
 echo -e "${GREEN}✅ Isolated P2P configuration applied${NC}"

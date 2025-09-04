@@ -13,6 +13,25 @@ services:
     devices:
       - /dev/net/tun
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep openvpn || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: 3
     environment:
       - EASYRSA_BATCH=1
       - OPENVPN_PROTOCOL=${OPENVPN_PROTOCOL:-udp}

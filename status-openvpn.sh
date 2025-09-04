@@ -53,10 +53,17 @@ echo ""
 echo -e "${BLUE}🔐 PKI Status:${NC}"
 if docker run -v openvpn-data:/etc/openvpn --rm alpine test -f /etc/openvpn/pki/ca.crt 2>/dev/null; then
     echo -e "  ${GREEN}✅ Certificate Authority initialized${NC}"
-    
+
     # Get CA expiry
     CA_EXPIRY=$(docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn openssl x509 -in /etc/openvpn/pki/ca.crt -noout -dates 2>/dev/null | grep "notAfter" | cut -d= -f2 || echo "Unknown")
     echo -e "     CA expires: $CA_EXPIRY"
+
+    # Check if CA expires within 30 days
+    if docker run -v openvpn-data:/etc/openvpn --rm kylemanna/openvpn openssl x509 -in /etc/openvpn/pki/ca.crt -noout -checkend $((30*24*3600)) 2>/dev/null; then
+        echo -e "     ${GREEN}✅ CA valid for more than 30 days${NC}"
+    else
+        echo -e "     ${RED}⚠️  CA expires within 30 days - renewal recommended${NC}"
+    fi
 else
     echo -e "  ${RED}❌ PKI not initialized${NC}"
     echo -e "     ${YELLOW}Run ./init-openvpn.sh to initialize${NC}"

@@ -22,6 +22,36 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Validation functions
+validate_ip() {
+    local ip=$1
+    if [[ ! $ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        return 1
+    fi
+
+    local IFS='.'
+    local -a octets=($ip)
+    for octet in "${octets[@]}"; do
+        if [[ $octet -lt 0 || $octet -gt 255 ]]; then
+            return 1
+        fi
+    done
+    return 0
+}
+
+validate_client_name() {
+    local name=$1
+    if [[ ! $name =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        echo -e "${RED}❌ Invalid client name. Use only letters, numbers, hyphens, and underscores${NC}"
+        return 1
+    fi
+    if [[ ${#name} -lt 2 || ${#name} -gt 32 ]]; then
+        echo -e "${RED}❌ Client name must be 2-32 characters long${NC}"
+        return 1
+    fi
+    return 0
+}
+
 CLIENT=$1
 ACTION=${2:-add} # add, revoke, list, show
 
@@ -98,10 +128,15 @@ list_clients() {
 
 add_client() {
     local client_name=$1
-    
+
     if [ -z "$client_name" ]; then
         echo -e "${RED}❌ Client name is required${NC}"
         show_usage
+        exit 1
+    fi
+
+    # Validate client name format
+    if ! validate_client_name "$client_name"; then
         exit 1
     fi
     
@@ -392,6 +427,13 @@ set_static_ip() {
     # Validate IP format
     if ! validate_ip "$static_ip"; then
         echo -e "${RED}❌ Invalid IP address format: $static_ip${NC}"
+        echo -e "${YELLOW}Expected format: xxx.xxx.xxx.xxx${NC}"
+        exit 1
+    fi
+
+    # Validate IP is in VPN network range
+    if ! [[ $static_ip =~ ^10\.8\.0\.[0-9]+$ ]]; then
+        echo -e "${RED}❌ IP $static_ip is not in VPN network range (10.8.0.0/24)${NC}"
         exit 1
     fi
     

@@ -10,6 +10,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 BACKUP_DIR=${1:-./backups}
+# Ensure backup directory exists and get absolute path
+mkdir -p "$BACKUP_DIR"
+BACKUP_DIR=$(realpath "$BACKUP_DIR")
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="openvpn_backup_${TIMESTAMP}.tar.gz"
 
@@ -99,7 +102,10 @@ EOF
 # Create final backup archive
 echo -e "${BLUE}🗜️  Compressing backup...${NC}"
 cd "$TEMP_DIR"
-tar czf "$BACKUP_DIR/$BACKUP_FILE" .
+# Use find to create a more reliable tar archive
+find . -type f -print0 | tar czf "$BACKUP_FILE" --null -T -
+cd ..
+mv "$TEMP_DIR/$BACKUP_FILE" "$BACKUP_DIR/$BACKUP_FILE"
 
 echo -e "${GREEN}✅ Backup created successfully!${NC}"
 echo ""
@@ -121,6 +127,15 @@ echo -e "${BLUE}🔄 Restoration Commands:${NC}"
 echo -e "  Extract: ${YELLOW}tar xzf $BACKUP_FILE${NC}"
 echo -e "  Restore: ${YELLOW}docker run --rm -v openvpn-data:/target -v \$(pwd):/backup alpine sh -c 'cd /target && tar xzf /backup/openvpn-data.tar.gz'${NC}"
 echo -e "  Start:   ${YELLOW}docker compose up -d${NC}"
+
+# Verify backup integrity
+echo -e "${BLUE}🔍 Verifying backup integrity...${NC}"
+if tar -tf "$BACKUP_DIR/$BACKUP_FILE" >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ Backup integrity verified${NC}"
+else
+    echo -e "${RED}❌ Backup integrity check failed${NC}"
+    exit 1
+fi
 
 # Clean up old backups (keep last 10)
 echo ""
